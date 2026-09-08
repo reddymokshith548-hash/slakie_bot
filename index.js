@@ -57,6 +57,7 @@ app.command("/my-slakie-gemini", async ({ command, ack, respond }) => {
       model: "gemini-3.1-pro", 
       contents: prompt,
       config: {
+        systemInstruction: "You are Slackie, a witty and helpful Slack bot built by Mokii. You are powered by Google's Gemini AI. Never claim to be Claude, ChatGPT, or any other AI.",
         tools: [{ googleSearch: {} }] // This line gives Slackie live internet access
       }
     });
