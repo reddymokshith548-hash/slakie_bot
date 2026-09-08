@@ -48,7 +48,7 @@ app.command("/my-slakie-gemini", async ({ command, ack, respond }) => {
   const prompt = command.text;
 
   if (!prompt) {
-    await respond({ text: "I Think You Just Call Me! Without Any Question : `/my-slakie-gemini [your question]`" });
+    await respond({ text: "Please provide a prompt! Usage: `/my-slakie-gemini [your question]`" });
     return;
   }
 
