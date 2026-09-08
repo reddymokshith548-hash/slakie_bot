@@ -48,14 +48,17 @@ app.command("/my-slakie-gemini", async ({ command, ack, respond }) => {
   const prompt = command.text;
 
   if (!prompt) {
-    await respond({ text: "Please provide a prompt! Usage: `/my-slakie-gemini [your question]`" });
+    await respond({ text: "I Think You Just Call Me! Without Any Question : `/my-slakie-gemini [your question]`" });
     return;
   }
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash", 
+      model: "gemini-3.1-pro", 
       contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }] // This line gives Slackie live internet access
+      }
     });
     
     await respond({
