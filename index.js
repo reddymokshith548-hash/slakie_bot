@@ -3,7 +3,7 @@ const { GoogleGenAI } = require("@google/genai");
 const { App } = require("@slack/bolt");
 const axios = require("axios");
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const ai = new GoogleGenAI({});
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
@@ -35,30 +35,38 @@ app.command("/my-slakie-help", async ({ ack, respond }) => {
 
 🌍 Information
 /my-slakie-weather [city] - Weather report for a city
-/my-slakie-f1 - F1 race information for a city
-
+/my-slakie-f1 - F1 race information current
 🧠 AI   
 /my-slakie-gemini [question] - Ask Gemini AI
 
 Made by Mokshith Reddy 🚀`
   });
 });
+
 app.command("/my-slakie-gemini", async ({ command, ack, respond }) => {
   await ack();
   const prompt = command.text;
 
   if (!prompt) {
-    await respond({ text: "Please provide a prompt! Usage: `/my-slakie-gemini [your question]`" });
+    await respond({ text: "I think you called me without a question! Usage: `/my-slakie-gemini [your question]`" });
     return;
   }
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro", 
+      model: "gemini-3.8-flash",
       contents: prompt,
       config: {
-        systemInstruction: "You are Slackie, a witty and helpful Slack bot built by Mokii. You are powered by Google's Gemini AI. Never claim to be Claude, ChatGPT, or any other AI.",
-        tools: [{ googleSearch: {} }] // This line gives Slackie live internet access
+        systemInstruction: "You are Slackie, a helpful Hack Club bot.",
+        // Forces the model to always search the web by dropping the threshold to 0
+        tools: [{
+          googleSearchRetrieval: {
+            dynamicRetrievalConfig: {
+              mode: "MODE_DYNAMIC",
+              dynamicThreshold: 0.0 
+            }
+          }
+        }]
       }
     });
     
@@ -121,27 +129,121 @@ app.command("/my-slakie-f1", async ({ ack, respond }) => {
   }
 });
 
-app.command("/my-slakie-funfact", async ({ ack, respond }) => {
+// Find the meaning of the word 
+
+app.command("/my-slakie-define", async({command,ack, respond })=> {
   await ack();
-  console.log('Fetching A funcFact')
-  try {
-    const response = await axios.get("https://uselessfacts.jsph.pl/api/v2/facts/random");
+  const word = command.text.trim();
 
-    console.log(response.data);
-
-    await respond(response.data.text)
-
-  } catch (err) {
-
-    await respond("Failed to fetch a Fun Fact (Partner Server Issue).");
-    console.log("Something went wrong", err)
-
+  if(!word){
+    return respond({ text: "I think you forgot the word! Usuage: '/my-slakie-define word"});
   }
-})
+  try {
+    const res = await axios.get('http://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}');
+    const data =res.data[0];
+    const meaning = data.meaning[0];
+    const definiton = meaning.definitions[0].definition;
+
+    await respond({
+      response_type: "in_channel",
+      text:'📖 *${data.word}* _(${meaning.partOfSpeech})_\n*Definition:* ${definition}'
+    });
+  } catch (err) {
+    await respond({ text: 'I could not find a definition for "${word}".'});
+  }
+});
+
+// QR code generator
+app.command("/my-slakie-qr", async ({ command, ack, respond}) =>{
+  await ack();
+  const input =command.text.trim();
+
+  if(!input) {
+    return respond({ text: "What should i encode? Usuage:/my-slakie-qr [link]"})
+  }
+  // the API generates an image on the fly based on the URL parameters
+  const qurl = 'https://api.qrserver.com/v1/create-qr-code/?/size=250x250&data=${encodeURIComponent(input)}';0
+
+  try{
+    await respond({
+      response_type: "in_channel",
+      blocks:[
+        {
+          type: "selection",
+          text: {
+            type: "mrkdwn",
+            text: '📱 Here is the QR code for: *${input}*'
+        }
+      },
+      {
+        type: "image",
+        image_url: qurl,
+        alt_text: "Generated QR Code"
+      }
+    ]
+    });
+  }catch (err) {
+    await respond({ text: "Failed to generate the QR Code"});
+  }
+});
+
+// This function lets you do quick math or convert units
+app.command("/my-slakie-convert", async ({ command ,ack ,respond }) => {
+  await ack();
+  const expression = command.text.trim();
+
+  if (!expression){
+    return respond({ text: "What should i calculate ? Usage: '/my-slakie-calc [expression]"});
+  }
+  
+  try {
+    const res = await axios.get('https://api.mathjs.org/v4/?expr=${encodeURIComponent(expression)}');
+    await respond({
+      response_type: "in_channel",
+      text:'🧮 *Expression:* \`${expression}\`\n*Result:* ${res.data}'
+    });
+  }catch (err) {
+    await respond({ text: "I could not calculate that.make sure your expression is formatted correctly!"});
+  }
+});
+
+// Currency Converter using Open Exchange Rates API 
+app.command("/my-slakie-currency",async ({ command, ack, respond}) =>{
+  await ack();
+
+  // Format should be like : USD to EUR 
+  const input = command.text.trim().toUpperCase().split(" TO ");
+
+  if(input.length !==2) {
+    return respond({ text: "Invalid format Usage :'/my-slakie-currency [BASE] to [TARGET]' "});
+  }
+
+  const base = input[0].trim();
+  const target = input[1].trim();
+
+  try {
+    const res =await axios.get('https://open.er-api.com/v6/latest/${base}');
+
+    if (res.data.result === "error") {
+       return respond({ text: "Failed to find that base currency. Try standard 3-letter codes like USD or GBP." });
+    }
+    
+    const rate = res.data.rates[target];
+
+      if(!rate) {
+        return respond({ text: 'I could not find a conversion rate for ${target}.'});
+      }
+      await respond({
+        response_type: "in_channel",
+        text: '*Currency Exchange:*\n1 ${base} = *${rate} ${target}*\n_Data updated last: ${res.data.time_last_update_utc.substring(0, 16)}_  Made using Open Exchange Rates API'
+      });
+  } catch(err) {
+    await respond({ text: "Sorry bro, i couldn't fecth currency rates right now.Let's try again later"});
+  }
+});
 
 // This Immediately Invoked Function Expression (IIFE) must remain at the root level to boot the app
 (async () => {
   await app.start();
-  console.log("bot is running!");
-})();
-
+  console.log("Your slakie bot is running!");
+});
