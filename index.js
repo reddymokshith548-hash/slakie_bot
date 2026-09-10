@@ -1,249 +1,644 @@
-require("dotenv").config(); // Loads environment variables into process.env before any other code runs
+require("dotenv").config();
+
 const { GoogleGenAI } = require("@google/genai");
 const { App } = require("@slack/bolt");
 const axios = require("axios");
 
-const ai = new GoogleGenAI({});
+// ============================================================
+// CONFIGURATION
+// ============================================================
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
   appToken: process.env.SLACK_APP_TOKEN,
-  socketMode: true // Socket mode routes traffic over WebSockets instead of requiring a public HTTP endpoint
+  socketMode: true,
 });
 
-// Ping function to check bot latency. The latency is calculated as the time taken to acknowledge the command and respond back to the user.
-app.command("/my-slakie-ping", async ({ command, ack, respond }) => {
-  const start = Date.now();
-  await ack(); // Acknowledging the command within 3 seconds is required by Slack, otherwise the user sees a timeout error
-  const latency = Date.now() - start;
-  await respond({ text: `Pong!\nLatency: ${latency}ms` });
-});
+// ============================================================
+// HELPER FUNCTIONS
+// ============================================================
+
+// Get today's date in India.
+// This prevents Slackie from having a permanently outdated date.
+function getCurrentDate() {
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(new Date());
+}
+
+// Get a cleaner timestamp for logs.
+function getTimestamp() {
+  return new Date().toISOString();
+}
+
+// Safely log an error.
+function logError(label, error) {
+  console.error(`\n[${getTimestamp()}] ${label}`);
+
+  if (error?.response?.data) {
+    console.error("API response:", error.response.data);
+  }
+
+  console.error("Message:", error?.message || error);
+}
+
+// Extract Google Search sources from Gemini's grounding metadata.
+//
+// Gemini's generateContent() response can expose groundingMetadata
+// inside candidates[0].
+function extractGeminiSources(response) {
+  const sources = [];
+
+  try {
+    const candidates = response?.candidates;
+
+    if (!Array.isArray(candidates) || candidates.length === 0) {
+      return sources;
+    }
+
+    const groundingMetadata = candidates[0]?.groundingMetadata;
+
+    if (!groundingMetadata) {
+      return sources;
+    }
+
+    const groundingChunks = groundingMetadata.groundingChunks || [];
+
+    for (const chunk of groundingChunks) {
+      const web = chunk?.web;
+
+      if (!web?.uri) {
+        continue;
+      }
+
+      sources.push({
+        title: web.title || "Source",
+        url: web.uri,
+      });
+    }
+  } catch (error) {
+    console.error("Could not extract Gemini sources:", error.message);
+  }
+
+  // Remove duplicates
+  const uniqueSources = [];
+  const seenUrls = new Set();
+
+  for (const source of sources) {
+    if (!seenUrls.has(source.url)) {
+      seenUrls.add(source.url);
+      uniqueSources.push(source);
+    }
+  }
+
+  // Keep the Slack message manageable.
+  return uniqueSources.slice(0, 8);
+}
+
+// Turn Gemini web sources into Slack-friendly links.
+function formatGeminiSources(response) {
+  const sources = extractGeminiSources(response);
+
+  if (sources.length === 0) {
+    return "";
+  }
+
+  const lines = sources.map((source) => {
+    return `• <${source.url}|${source.title}>`;
+  });
+
+  return `\n\n🔎 *Sources*\n${lines.join("\n")}`;
+}
+
+// ============================================================
+// HELP COMMAND
+// ============================================================
 
 app.command("/my-slakie-help", async ({ ack, respond }) => {
   await ack();
 
   await respond({
-    text: `🤖 SlackBot HackClub Commands
+    text: `🤖 *Slackie — Hack Club Bot*
 
-📌 Utility
+📌 *Utility*
 /my-slakie-help - Show all commands
 /my-slakie-ping - Check bot latency
 
-🎭 Fun
+🎭 *Fun*
 /my-slakie-joke - Random joke
-/my-slakie-meme - Random meme
+/my-slakie-catfact - Random cat fact
 
-🌍 Information
-/my-slakie-weather [city] - Weather report for a city
-/my-slakie-f1 - F1 race information current
-🧠 AI   
-/my-slakie-gemini [question] - Ask Gemini AI
+🌍 *Information*
+/my-slakie-f1 - Next F1 race information
+/my-slakie-define [word] - Define a word
 
-Made by Mokshith Reddy 🚀`
+🧮 *Tools*
+/my-slakie-convert [expression] - Math & unit calculations
+/my-slakie-currency [BASE] to [TARGET] - Currency conversion
+/my-slakie-qr [text/link] - Generate a QR code
+
+🧠 *AI*
+/my-slakie-gemini [question] - Ask Slackie using Gemini + Google Search
+
+Made by Mokshith Reddy 🚀`,
   });
 });
 
+// ============================================================
+// PING COMMAND
+// ============================================================
+
+app.command("/my-slakie-ping", async ({ ack, respond }) => {
+  const start = Date.now();
+
+  await ack();
+
+  const latency = Date.now() - start;
+
+  await respond({
+    text: `🏓 Pong!\nLatency: ${latency}ms`,
+  });
+});
+
+// ============================================================
+// GEMINI AI COMMAND
+// ============================================================
+
 app.command("/my-slakie-gemini", async ({ command, ack, respond }) => {
   await ack();
-  const prompt = command.text;
+
+  const prompt = command.text.trim();
 
   if (!prompt) {
-    await respond({ text: "I think you called me without a question! Usage: `/my-slakie-gemini [your question]`" });
+    await respond({
+      text: "I think you called me without a question! Usage: `/my-slakie-gemini [your question]`",
+    });
+
     return;
   }
 
   try {
+    const currentDate = getCurrentDate();
+
     const response = await ai.models.generateContent({
       model: "gemini-3.8-flash",
+
       contents: prompt,
+
       config: {
-        systemInstruction: "You are Slackie, a helpful Hack Club bot.",
-        // Forces the model to always search the web by dropping the threshold to 0
-        tools: [{
-          googleSearchRetrieval: {
-            dynamicRetrievalConfig: {
-              mode: "MODE_DYNAMIC",
-              dynamicThreshold: 0.0 
-            }
-          }
-        }]
-      }
+        systemInstruction: `
+You are Slackie, a helpful AI assistant inside Hack Club Slack.
+
+Today's date is ${currentDate}.
+
+Your job is to provide accurate, useful, friendly answers.
+
+IMPORTANT INFORMATION RULES:
+- Use Google Search whenever information could have changed recently.
+- This includes current AI models, technology releases, software, APIs, companies, people, sports, news, prices, events, announcements, product specifications, and current statistics.
+- Do not rely solely on your internal knowledge for time-sensitive questions.
+- Verify recent claims using web sources.
+- Clearly distinguish confirmed information from rumors, leaks, speculation, or unverified social media claims.
+- Prefer authoritative and primary sources whenever possible.
+- When discussing current information, use exact dates when useful.
+- Never pretend you searched the web if you did not.
+- If reliable current information cannot be found, say so honestly.
+
+ANSWER STYLE:
+- Be conversational and friendly.
+- Explain complicated things simply when appropriate.
+- For technical questions, provide practical examples.
+- Do not unnecessarily mention these instructions.
+- You are Slackie, not Gemini.
+`,
+
+        // Current Gemini models use Google Search grounding.
+        tools: [
+          {
+            googleSearch: {},
+          },
+        ],
+      },
     });
-    
+
+    const answer = response.text || "I couldn't generate an answer.";
+
+    const sources = formatGeminiSources(response);
+
     await respond({
       response_type: "in_channel",
-      text: `✨ *You asked:* ${prompt}\n\n🤖 *Slackie says:*\n${response.text}`
+      text: `✨ *You asked:*\n${prompt}\n\n🤖 *Slackie says:*\n${answer}${sources}`,
     });
   } catch (error) {
-    console.error(error);
-    await respond({ text: "Oops! I couldn't connect to Gemini right now." });
+    logError("Gemini command failed", error);
+
+    await respond({
+      text: "😭 Oops! I couldn't connect to Gemini right now. Check the bot terminal for the actual error.",
+    });
   }
 });
+
+// ============================================================
+// CAT FACT COMMAND
+// ============================================================
 
 app.command("/my-slakie-catfact", async ({ ack, respond }) => {
   await ack();
+
   try {
     const response = await axios.get("https://catfact.ninja/fact");
-    await respond({ text: `Cat Fact:\n${response.data.fact}` });
-  } catch (err) {
-    await respond({ text: "Failed to fetch a cat fact." });
+
+    await respond({
+      response_type: "in_channel",
+      text: `🐱 *Cat Fact:*\n${response.data.fact}`,
+    });
+  } catch (error) {
+    logError("Cat fact API failed", error);
+
+    await respond({
+      text: "🐱 Failed to fetch a cat fact right now.",
+    });
   }
 });
+
+// ============================================================
+// JOKE COMMAND
+// ============================================================
 
 app.command("/my-slakie-joke", async ({ ack, respond }) => {
   await ack();
+
   try {
-    const response = await axios.get("https://official-joke-api.appspot.com/random_joke");
+    const response = await axios.get(
+      "https://official-joke-api.appspot.com/random_joke"
+    );
+
     await respond({
-      text: `${response.data.setup}\n\n${response.data.punchline}` // Backticks allow for multi-line strings and variable injection
+      response_type: "in_channel",
+      text: `😂 *${response.data.setup}*\n\n${response.data.punchline}`,
     });
-  } catch (err) {
-    await respond({ text: "Hehe, my server is down!catch you next time bro" });
+  } catch (error) {
+    logError("Joke API failed", error);
+
+    await respond({
+      text: "😂 Hehe, my joke server is down. Catch you next time bro.",
+    });
   }
 });
+
+// ============================================================
+// F1 COMMAND
+// ============================================================
 
 app.command("/my-slakie-f1", async ({ ack, respond }) => {
   await ack();
-  try {
-    const response = await axios.get("https://api.jolpi.ca/ergast/f1/current/next.json");
-    const race = response.data.MRData.RaceTable.Races[0];
-    
-    const today = new Date();
-    const raceDate = new Date(race.date);
-    
-    const timeDiff = raceDate.getTime() - today.getTime();
-    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
 
-    let hypeMessage = "_Any guesses for the World Champion 2026!_";
-    
-    if (daysDiff >= 0 && daysDiff <= 7) {
-        hypeMessage += "\n🏎️💨 *It's Race Week less go!*";
+  try {
+    const response = await axios.get(
+      "https://api.jolpi.ca/ergast/f1/current/next.json"
+    );
+
+    const races =
+      response.data?.MRData?.RaceTable?.Races || [];
+
+    // Prevent a crash if the API returns no races.
+    if (races.length === 0) {
+      await respond({
+        text: "🏎️ I couldn't find the next F1 race right now.",
+      });
+
+      return;
     }
 
-    await respond({ 
-      response_type: "in_channel", // This parameter makes the bot's response visible to everyone in the channel, not just the user who called it
-      text: `🏎️ *Next F1 Race:* ${race.raceName} at ${race.Circuit.circuitName}\n📅 *Date:* ${race.date} ${race.time}\n${hypeMessage}`  
+    const race = races[0];
+
+    // ----------------------------------------------------------
+    // More accurate race timing
+    // ----------------------------------------------------------
+
+    const raceDateTime = new Date(
+      `${race.date}T${race.time || "00:00:00"}Z`
+    );
+
+    const now = new Date();
+
+    const timeDiff = raceDateTime.getTime() - now.getTime();
+
+    const daysDiff = Math.ceil(
+      timeDiff / (1000 * 60 * 60 * 24)
+    );
+
+    let hypeMessage =
+      "_Any guesses for the 2026 World Champion?_";
+
+    if (daysDiff >= 0 && daysDiff <= 7) {
+      hypeMessage += "\n🏎️💨 *It's Race Week! LESS GOOO!*";
+    }
+
+    if (daysDiff < 0) {
+      hypeMessage =
+        "_The next race may already be underway or the API timing has changed._";
+    }
+
+    await respond({
+      response_type: "in_channel",
+      text:
+        `🏎️ *Next F1 Race*\n` +
+        `🏁 *Race:* ${race.raceName}\n` +
+        `📍 *Circuit:* ${race.Circuit.circuitName}\n` +
+        `🌍 *Location:* ${race.Circuit.Location.locality}, ${race.Circuit.Location.country}\n` +
+        `📅 *Date:* ${race.date}\n` +
+        `⏰ *Time:* ${race.time || "Not provided"}\n\n` +
+        hypeMessage,
     });
-  } catch (err) {
-    await respond({ text: "So sorry, I couldn't fetch the F1 data right now." });
+  } catch (error) {
+    logError("F1 API failed", error);
+
+    await respond({
+      text: "🏎️ Sorry bro, I couldn't fetch the F1 data right now.",
+    });
   }
 });
 
-// Find the meaning of the word 
+// ============================================================
+// DEFINE COMMAND
+// ============================================================
 
-app.command("/my-slakie-define", async({command,ack, respond })=> {
+app.command("/my-slakie-define", async ({ command, ack, respond }) => {
   await ack();
+
   const word = command.text.trim();
 
-  if(!word){
-    return respond({ text: "I think you forgot the word! Usuage: '/my-slakie-define word"});
+  if (!word) {
+    await respond({
+      text: "📖 I think you forgot the word!\nUsage: `/my-slakie-define [word]`",
+    });
+
+    return;
   }
+
   try {
-    const res = await axios.get('http://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}');
-    const data =res.data[0];
-    const meaning = data.meaning[0];
-    const definiton = meaning.definitions[0].definition;
+    const response = await axios.get(
+      `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(
+        word
+      )}`
+    );
+
+    const data = response.data[0];
+
+    const meanings = data.meanings || [];
+
+    if (meanings.length === 0) {
+      await respond({
+        text: `I couldn't find a meaning for "${word}".`,
+      });
+
+      return;
+    }
+
+    const meaning = meanings[0];
+
+    const definitions = meaning.definitions || [];
+
+    if (definitions.length === 0) {
+      await respond({
+        text: `I found "${word}", but couldn't find its definition.`,
+      });
+
+      return;
+    }
+
+    const definition = definitions[0].definition;
+
+    const example = definitions[0].example;
+
+    let text =
+      `📖 *${data.word}* _(${meaning.partOfSpeech || "word"})_\n\n` +
+      `*Definition:*\n${definition}`;
+
+    if (example) {
+      text += `\n\n*Example:*\n_${example}_`;
+    }
 
     await respond({
       response_type: "in_channel",
-      text:'📖 *${data.word}* _(${meaning.partOfSpeech})_\n*Definition:* ${definition}'
+      text,
     });
-  } catch (err) {
-    await respond({ text: 'I could not find a definition for "${word}".'});
+  } catch (error) {
+    logError("Dictionary API failed", error);
+
+    await respond({
+      text: `📖 I could not find a definition for "${word}".`,
+    });
   }
 });
 
-// QR code generator
-app.command("/my-slakie-qr", async ({ command, ack, respond}) =>{
+// ============================================================
+// QR CODE COMMAND
+// ============================================================
+
+app.command("/my-slakie-qr", async ({ command, ack, respond }) => {
   await ack();
-  const input =command.text.trim();
 
-  if(!input) {
-    return respond({ text: "What should i encode? Usuage:/my-slakie-qr [link]"})
+  const input = command.text.trim();
+
+  if (!input) {
+    await respond({
+      text:
+        "📱 What should I encode?\nUsage: `/my-slakie-qr [link or text]`",
+    });
+
+    return;
   }
-  // the API generates an image on the fly based on the URL parameters
-  const qurl = 'https://api.qrserver.com/v1/create-qr-code/?/size=250x250&data=${encodeURIComponent(input)}';0
 
-  try{
+  const qurl =
+    `https://api.qrserver.com/v1/create-qr-code/` +
+    `?size=250x250&data=${encodeURIComponent(input)}`;
+
+  try {
     await respond({
       response_type: "in_channel",
-      blocks:[
+
+      blocks: [
         {
-          type: "selection",
+          type: "section",
           text: {
             type: "mrkdwn",
-            text: '📱 Here is the QR code for: *${input}*'
-        }
-      },
-      {
-        type: "image",
-        image_url: qurl,
-        alt_text: "Generated QR Code"
-      }
-    ]
+            text: `📱 *QR Code generated for:*\n\`${input}\``,
+          },
+        },
+        {
+          type: "image",
+          image_url: qurl,
+          alt_text: `QR code for ${input}`,
+        },
+      ],
     });
-  }catch (err) {
-    await respond({ text: "Failed to generate the QR Code"});
+  } catch (error) {
+    logError("QR command failed", error);
+
+    await respond({
+      text: "📱 Failed to generate the QR code.",
+    });
   }
 });
 
-// This function lets you do quick math or convert units
-app.command("/my-slakie-convert", async ({ command ,ack ,respond }) => {
+// ============================================================
+// MATH / UNIT CONVERTER
+// ============================================================
+
+app.command("/my-slakie-convert", async ({ command, ack, respond }) => {
   await ack();
+
   const expression = command.text.trim();
 
-  if (!expression){
-    return respond({ text: "What should i calculate ? Usage: '/my-slakie-calc [expression]"});
+  if (!expression) {
+    await respond({
+      text:
+        "🧮 What should I calculate?\nUsage: `/my-slakie-convert [expression]`",
+    });
+
+    return;
   }
-  
+
   try {
-    const res = await axios.get('https://api.mathjs.org/v4/?expr=${encodeURIComponent(expression)}');
+    const response = await axios.get(
+      `https://api.mathjs.org/v4/?expr=${encodeURIComponent(expression)}`
+    );
+
     await respond({
       response_type: "in_channel",
-      text:'🧮 *Expression:* \`${expression}\`\n*Result:* ${res.data}'
+      text:
+        `🧮 *Expression:*\n\`${expression}\`\n\n` +
+        `*Result:*\n\`${response.data}\``,
     });
-  }catch (err) {
-    await respond({ text: "I could not calculate that.make sure your expression is formatted correctly!"});
+  } catch (error) {
+    logError("Math API failed", error);
+
+    await respond({
+      text:
+        "🧮 I couldn't calculate that. Make sure your expression is formatted correctly!",
+    });
   }
 });
 
-// Currency Converter using Open Exchange Rates API 
-app.command("/my-slakie-currency",async ({ command, ack, respond}) =>{
+// ============================================================
+// CURRENCY CONVERTER
+// ============================================================
+
+app.command("/my-slakie-currency", async ({ command, ack, respond }) => {
   await ack();
 
-  // Format should be like : USD to EUR 
-  const input = command.text.trim().toUpperCase().split(" TO ");
+  // Expected:
+  // USD to EUR
+  // GBP to INR
+  // EUR to USD
 
-  if(input.length !==2) {
-    return respond({ text: "Invalid format Usage :'/my-slakie-currency [BASE] to [TARGET]' "});
+  const input = command.text
+    .trim()
+    .toUpperCase()
+    .split(" TO ");
+
+  if (input.length !== 2) {
+    await respond({
+      text:
+        "💱 Invalid format.\nUsage: `/my-slakie-currency [BASE] to [TARGET]`\n\nExample: `/my-slakie-currency USD to INR`",
+    });
+
+    return;
   }
 
   const base = input[0].trim();
   const target = input[1].trim();
 
+  if (!/^[A-Z]{3}$/.test(base) || !/^[A-Z]{3}$/.test(target)) {
+    await respond({
+      text:
+        "💱 Please use standard 3-letter currency codes, like USD, EUR, GBP or INR.",
+    });
+
+    return;
+  }
+
   try {
-    const res =await axios.get('https://open.er-api.com/v6/latest/${base}');
+    const response = await axios.get(
+      `https://open.er-api.com/v6/latest/${base}`
+    );
 
-    if (res.data.result === "error") {
-       return respond({ text: "Failed to find that base currency. Try standard 3-letter codes like USD or GBP." });
-    }
-    
-    const rate = res.data.rates[target];
-
-      if(!rate) {
-        return respond({ text: 'I could not find a conversion rate for ${target}.'});
-      }
+    if (response.data.result === "error") {
       await respond({
-        response_type: "in_channel",
-        text: '*Currency Exchange:*\n1 ${base} = *${rate} ${target}*\n_Data updated last: ${res.data.time_last_update_utc.substring(0, 16)}_  Made using Open Exchange Rates API'
+        text:
+          `💱 I couldn't find the base currency "${base}".`,
       });
-  } catch(err) {
-    await respond({ text: "Sorry bro, i couldn't fecth currency rates right now.Let's try again later"});
+
+      return;
+    }
+
+    const rate = response.data.rates?.[target];
+
+    // Correct check — unlike `if (!rate)`,
+    // this specifically checks whether the rate is missing.
+    if (rate === undefined) {
+      await respond({
+        text:
+          `💱 I couldn't find a conversion rate for ${target}.`,
+      });
+
+      return;
+    }
+
+    const updatedAt =
+      response.data.time_last_update_utc || "Unknown";
+
+    await respond({
+      response_type: "in_channel",
+      text:
+        `💱 *Currency Exchange*\n\n` +
+        `1 ${base} = *${rate} ${target}*\n\n` +
+        `_Data updated: ${updatedAt}_\n` +
+        `_Powered by ExchangeRate-API_`,
+    });
+  } catch (error) {
+    logError("Currency API failed", error);
+
+    await respond({
+      text:
+        "💱 Sorry bro, I couldn't fetch currency rates right now. Let's try again later.",
+    });
   }
 });
 
-// This Immediately Invoked Function Expression (IIFE) must remain at the root level to boot the app
-(async () => {
-  await app.start();
-  console.log("Your slakie bot is running!");
+// ============================================================
+// GLOBAL APP ERROR HANDLER
+// ============================================================
+
+app.error(async (error) => {
+  logError("Slack Bolt error", error);
 });
+
+// ============================================================
+// START BOT
+// ============================================================
+
+(async () => {
+  try {
+    await app.start();
+
+    console.log("======================================");
+    console.log("🤖 Slackie is running!");
+    console.log(`📅 Current date: ${getCurrentDate()}`);
+    console.log("🚀 Hack Club Stardance bot ready!");
+    console.log("======================================");
+  } catch (error) {
+    logError("Failed to start Slackie", error);
+
+    process.exit(1);
+  }
+})();
