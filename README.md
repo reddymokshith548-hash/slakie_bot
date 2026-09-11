@@ -78,16 +78,5 @@ node index.js
 - Slack Bolt
 - Google Gemini API
 - Axios
-- Meme API
+- Reddit meme API
 - Official Joke API
-
----
-
-## Resources I Used
-
-- Google Gemini Documentation
-- Slack Bolt Documentation
-- Open-Meteo API
-- Meme API
-- Official Joke API
-- StarDance Hack Club
