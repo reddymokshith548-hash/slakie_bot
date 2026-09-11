@@ -133,15 +133,15 @@ app.command("/my-slakie-help", async ({ ack, respond }) => {
 
 🎭 *Fun*
 /my-slakie-joke - Random joke
-/my-slakie-catfact - Random cat fact
+/my-slakie-meme - Random meme
 
 🌍 *Information*
 /my-slakie-f1 - Next F1 race information
 /my-slakie-define [word] - Define a word
 
 🧮 *Tools*
-/my-slakie-convert [expression] - Math & unit calculations
-/my-slakie-currency [BASE] to [TARGET] - Currency conversion
+/my-slakie-math [expression] - Math & unit calculations
+/my-slakie-currency [VALUE] [BASE] to [TARGET] - Currency conversion
 /my-slakie-qr [text/link] - Generate a QR code
 
 🧠 *AI*
@@ -178,15 +178,15 @@ app.command("/my-slakie-gemini", async ({ command, ack, respond }) => {
 
   if (!prompt) {
     await respond({
-      text: "I think you called me without a question! Usage: `/my-slakie-gemini [your question]`",
+      text:
+        "I think you called me without a question! Usage: `/my-slakie-gemini [your question]`",
     });
-
     return;
   }
 
-  try {
-    const currentDate = getCurrentDate();
+  const currentDate = getCurrentDate();
 
+  try {
     const response = await ai.models.generateContent({
       model: "gemini-3.8-flash",
 
@@ -198,28 +198,29 @@ You are Slackie, a helpful AI assistant inside Hack Club Slack.
 
 Today's date is ${currentDate}.
 
-Your job is to provide accurate, useful, friendly answers.
+IMPORTANT CURRENT INFORMATION RULES:
 
-IMPORTANT INFORMATION RULES:
-- Use Google Search whenever information could have changed recently.
-- This includes current AI models, technology releases, software, APIs, companies, people, sports, news, prices, events, announcements, product specifications, and current statistics.
-- Do not rely solely on your internal knowledge for time-sensitive questions.
-- Verify recent claims using web sources.
-- Clearly distinguish confirmed information from rumors, leaks, speculation, or unverified social media claims.
-- Prefer authoritative and primary sources whenever possible.
-- When discussing current information, use exact dates when useful.
-- Never pretend you searched the web if you did not.
-- If reliable current information cannot be found, say so honestly.
+- For information that may have changed recently, use Google Search.
+- This includes current AI models, software, APIs, technology releases,
+  companies, people, sports, news, prices, events, announcements,
+  specifications, statistics, and anything involving "latest", "current",
+  "today", "now", or "recent".
+- Do not rely only on your internal knowledge for current information.
+- Prefer official and primary sources.
+- Use exact dates when useful.
+- Clearly distinguish confirmed information from rumors or speculation.
+- Never invent current information.
+- Never claim that you searched if you did not.
 
 ANSWER STYLE:
-- Be conversational and friendly.
-- Explain complicated things simply when appropriate.
-- For technical questions, provide practical examples.
-- Do not unnecessarily mention these instructions.
+
+- Be friendly and conversational.
+- Keep answers clear and useful.
+- Explain technical topics simply.
+- Give practical examples when useful.
 - You are Slackie, not Gemini.
 `,
 
-        // Current Gemini models use Google Search grounding.
         tools: [
           {
             googleSearch: {},
@@ -228,67 +229,53 @@ ANSWER STYLE:
       },
     });
 
-    const answer = response.text || "I couldn't generate an answer.";
+    // Check whether Google Search grounding was actually used
+    const groundingMetadata =
+      response?.candidates?.[0]?.groundingMetadata;
+
+    if (groundingMetadata) {
+      console.log("🔎 Google Search grounding used");
+
+      if (groundingMetadata.webSearchQueries) {
+        console.log(
+          "Search queries:",
+          groundingMetadata.webSearchQueries
+        );
+      }
+    } else {
+      console.log("ℹ️ Gemini did not use Google Search");
+    }
+
+    const answer =
+      response.text || "I couldn't generate an answer.";
 
     const sources = formatGeminiSources(response);
 
     await respond({
       response_type: "in_channel",
-      text: `✨ *You asked:*\n${prompt}\n\n🤖 *Slackie says:*\n${answer}${sources}`,
+      text:
+        `✨ *You asked:*\n${prompt}\n\n` +
+        `🤖 *Slackie says:*\n${answer}${sources}`,
     });
+
   } catch (error) {
     logError("Gemini command failed", error);
 
-    await respond({
-      text: "😭 Oops! I couldn't connect to Gemini right now. Check the bot terminal for the actual error.",
-    });
-  }
-});
-
-// ============================================================
-// CAT FACT COMMAND
-// ============================================================
-
-app.command("/my-slakie-catfact", async ({ ack, respond }) => {
-  await ack();
-
-  try {
-    const response = await axios.get("https://catfact.ninja/fact");
+    if (
+      error?.status === 429 ||
+      error?.message?.includes("429") ||
+      error?.message?.includes("RESOURCE_EXHAUSTED")
+    ) {
+      await respond({
+        text:
+          "⚠️ Gemini rate limit reached. Your API project may still be on the Free Tier. Check AI Studio → Rate Limit / Billing.",
+      });
+      return;
+    }
 
     await respond({
-      response_type: "in_channel",
-      text: `🐱 *Cat Fact:*\n${response.data.fact}`,
-    });
-  } catch (error) {
-    logError("Cat fact API failed", error);
-
-    await respond({
-      text: "🐱 Failed to fetch a cat fact right now.",
-    });
-  }
-});
-
-// ============================================================
-// JOKE COMMAND
-// ============================================================
-
-app.command("/my-slakie-joke", async ({ ack, respond }) => {
-  await ack();
-
-  try {
-    const response = await axios.get(
-      "https://official-joke-api.appspot.com/random_joke"
-    );
-
-    await respond({
-      response_type: "in_channel",
-      text: `😂 *${response.data.setup}*\n\n${response.data.punchline}`,
-    });
-  } catch (error) {
-    logError("Joke API failed", error);
-
-    await respond({
-      text: "😂 Hehe, my joke server is down. Catch you next time bro.",
+      text:
+        "😭 Oops! I couldn't connect to Gemini right now. Check the bot terminal for the actual error.",
     });
   }
 });
@@ -491,10 +478,10 @@ app.command("/my-slakie-qr", async ({ command, ack, respond }) => {
 });
 
 // ============================================================
-// MATH / UNIT CONVERTER
+// MATH 
 // ============================================================
 
-app.command("/my-slakie-convert", async ({ command, ack, respond }) => {
+app.command("/my-slakie-math", async ({ command, ack, respond }) => {
   await ack();
 
   const expression = command.text.trim();
@@ -502,7 +489,7 @@ app.command("/my-slakie-convert", async ({ command, ack, respond }) => {
   if (!expression) {
     await respond({
       text:
-        "🧮 What should I calculate?\nUsage: `/my-slakie-convert [expression]`",
+        "🧮 What should I calculate?\nUsage: `/my-slakie-math [expression]`",
     });
 
     return;
@@ -529,88 +516,127 @@ app.command("/my-slakie-convert", async ({ command, ack, respond }) => {
   }
 });
 
+// The Meme Command
+app.command("/my-slakie-meme", async ({ ack, respond }) => {
+  await ack();
+
+  try {
+    // Fetches a random meme from popular subreddits
+    const response = await axios.get("https://meme-api.com/gimme");
+
+    await respond({
+      response_type: "in_channel",
+      blocks: [
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `😂 *${response.data.title}*`
+          }
+        },
+        {
+          type: "image",
+          image_url: response.data.url,
+          alt_text: "Random Meme"
+        }
+      ]
+    });
+  } catch (error) {
+    console.error("Meme API failed:", error);
+    await respond({
+      text: "🖼️ Sorry, I couldn't fetch a meme right now. Try again later!"
+    });
+  }
+});
+
+// The Joke Command
+app.command("/my-slakie-joke", async ({ ack, respond }) => {
+  await ack();
+
+  try {
+    const response = await axios.get("https://official-joke-api.appspot.com/random_joke");
+
+    await respond({
+      response_type: "in_channel",
+      text: `🎭 *${response.data.setup}*\n\n_${response.data.punchline}_`
+    });
+  } catch (error) {
+    console.error("Joke API failed:", error);
+    await respond({
+      text: "🤡 I forgot the punchline! Try fetching a joke again later."
+    });
+  }
+});
+
 // ============================================================
-// CURRENCY CONVERTER
+// CURRENCY Converter
 // ============================================================
 
 app.command("/my-slakie-currency", async ({ command, ack, respond }) => {
   await ack();
 
-  // Expected:
-  // USD to EUR
-  // GBP to INR
-  // EUR to USD
+  const text = command.text.trim();
 
-  const input = command.text
-    .trim()
-    .toUpperCase()
-    .split(" TO ");
+  // Matches: "1299 USD to INR", "12.50 eur to usd", or "USD to INR"
+  const match = text.match(/^(\d+(?:\.\d+)?\s+)?([a-zA-Z]{3})\s+to\s+([a-zA-Z]{3})$/i);
 
-  if (input.length !== 2) {
+  if (!match) {
     await respond({
       text:
-        "💱 Invalid format.\nUsage: `/my-slakie-currency [BASE] to [TARGET]`\n\nExample: `/my-slakie-currency USD to INR`",
+        "💱 Invalid format.\n" +
+        "Usage: `/my-slakie-currency [amount] [BASE] to [TARGET]`\n\n" +
+        "Examples:\n" +
+        "• `/my-slakie-currency 1299 USD to INR`\n" +
+        "• `/my-slakie-currency USD to INR`",
     });
-
     return;
   }
 
-  const base = input[0].trim();
-  const target = input[1].trim();
-
-  if (!/^[A-Z]{3}$/.test(base) || !/^[A-Z]{3}$/.test(target)) {
-    await respond({
-      text:
-        "💱 Please use standard 3-letter currency codes, like USD, EUR, GBP or INR.",
-    });
-
-    return;
-  }
+  // If no amount was typed, default to 1
+  const amount = match[1] ? parseFloat(match[1].trim()) : 1;
+  const base = match[2].toUpperCase();
+  const target = match[3].toUpperCase();
 
   try {
-    const response = await axios.get(
-      `https://open.er-api.com/v6/latest/${base}`
-    );
+    const response = await axios.get(`https://open.er-api.com/v6/latest/${base}`);
 
     if (response.data.result === "error") {
       await respond({
-        text:
-          `💱 I couldn't find the base currency "${base}".`,
+        text: `💱 I couldn't find the base currency "${base}".`,
       });
-
       return;
     }
 
     const rate = response.data.rates?.[target];
 
-    // Correct check — unlike `if (!rate)`,
-    // this specifically checks whether the rate is missing.
     if (rate === undefined) {
       await respond({
-        text:
-          `💱 I couldn't find a conversion rate for ${target}.`,
+        text: `💱 I couldn't find a conversion rate for "${target}".`,
       });
-
       return;
     }
 
-    const updatedAt =
-      response.data.time_last_update_utc || "Unknown";
+    const convertedTotal = (amount * rate).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+    const formattedAmount = amount.toLocaleString();
+    const updatedAt = response.data.time_last_update_utc || "Unknown";
 
     await respond({
       response_type: "in_channel",
       text:
-        `💱 *Currency Exchange*\n\n` +
-        `1 ${base} = *${rate} ${target}*\n\n` +
-        `_Data updated: ${updatedAt}_\n` +
-        `_Powered by ExchangeRate-API_`,
+        `💱 *Currency Conversion*\n\n` +
+        `💵 *${formattedAmount} ${base}* = *${convertedTotal} ${target}*\n\n` +
+        `📊 *Exchange Rate:* 1 ${base} = ${rate} ${target}\n` +
+        `🕒 _Data updated: ${updatedAt}_\n` +
+        `⚡ _Powered by ExchangeRate-API_`,
     });
   } catch (error) {
-    logError("Currency API failed", error);
-
+    console.error("Currency API failed:", error);
     await respond({
-      text:
-        "💱 Sorry bro, I couldn't fetch currency rates right now. Let's try again later.",
+      text: "💱 Sorry, I couldn't fetch currency rates right now. Let's try again later.",
     });
   }
 });
