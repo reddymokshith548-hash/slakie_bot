@@ -18,6 +18,10 @@ This project was created to learn:
 
 ## Developed as part of the **StarDance Hack Club** challenge.
 
+What I learned during the process :
+
+I learned how to build a fully functional Slack bot from the ground up using Node.js and the Slack Bolt framework. Throughout the process, I gained hands-on experience integrating modern AI using the Google GenAI SDK (Gemini) and handling asynchronous data fetching with Axios to connect multiple external REST APIs (like live currency exchange, dictionaries, and F1 schedules). I also learned how to parse complex user inputs using Regular Expressions. On the infrastructure side, I learned how to deploy and host my code on a Raspberry Pi over SSH.
+
 ## 📋 Available Commands
 
 <img width="1713" height="495" alt="final devlog slakie_bot commands" src="https://github.com/user-attachments/assets/308fbf43-090d-4a64-8c00-6e32f96fae06" />
