@@ -84,3 +84,4 @@ node index.js
 - Axios
 - Reddit meme API
 - Official Joke API
+- Jolpica API for the F1 details
