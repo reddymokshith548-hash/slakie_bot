@@ -1,6 +1,6 @@
 # Slackie_bot
 
-## This project was built during the **Hack Club StarDance ** challenge.
+## This project was built during the Hack Club StarDance challenge.
 
 
 ## Why I created this project?
