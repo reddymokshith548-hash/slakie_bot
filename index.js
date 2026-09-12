@@ -82,7 +82,7 @@ app.command("/my-slakie-gemini", async ({ command, ack, respond }) => {
   let question = command.text.trim();
 
   if (!question) {
-      return respond(`I Think You Just Call Me! Without Any Question :) 😭`);
+      return respond({ text: `I Think You Just Call Me! Without Any Question :) 😭` });
     }
 
   try {
@@ -92,7 +92,7 @@ app.command("/my-slakie-gemini", async ({ command, ack, respond }) => {
       contents: question,
       
       config: {
-        systemInstruction: `You are Slackie, a bot for Hack Club.Use Google Search for anything current, recent, or changing like sports, tech news, and prices. Be friendly, keep it short, and explain things simply.`,
+        systemInstruction: `You are Slackie, a bot for Hack Club. Use Google Search for anything current, recent, or changing like sports, tech news, and prices. Be friendly, keep it short, and explain things simply.`,
         
         tools: [{ googleSearch: {} }],
       },
@@ -128,7 +128,7 @@ app.command("/my-slakie-f1", async ({ ack, respond }) => {
     }
 
     let race = races[0];
-    let raceDate = new Date(`${race.date}T${race.time || "00:00:00"}Z`);
+    let raceDate = new Date(`${race.date}T${race.time || "00:00:00"}`);
     let daysDiff = Math.ceil((raceDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     
     let msg = "_Any guesses for the World Champ?_";
@@ -138,7 +138,7 @@ app.command("/my-slakie-f1", async ({ ack, respond }) => {
 
     await respond({
       response_type: "in_channel",
-      text: `🏎️ *Next F1 Race*\n🏁 *Race:* ${race.raceName}\n📍 *Circuit:* ${race.Circuit.circuitName}\n🌍 *Location:* ${race.Circuit.Location.locality}\n📅 *todaysDate:* ${race.todaysDate}\n⏰ *Time:* ${race.time || "TBD"}\n\n${msg}`,
+      text: `🏎️ *Next F1 Race*\n🏁 *Race:* ${race.raceName}\n📍 *Circuit:* ${race.Circuit.circuitName}\n🌍 *Location:* ${race.Circuit.Location.locality}\n📅 📅 *Race Date:* ${new Date(race.date).toLocaleDateString('en-US', { dateStyle: 'long' })}\n⏰ *Time:* ${race.time || "TBD"}\n\n${msg}`,
     });
   } catch (err) {
     console.error(err);
