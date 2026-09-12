@@ -30,7 +30,7 @@ function getSources(response) {
     
     if (links.length > 0) {
       return `\n\n🔎 *Sources*\n${links.join("\n")}`;
-    }
+    } return "";
   } catch (err) {
     console.log("failed to parse sources:", err.message);
     return "";
@@ -161,7 +161,7 @@ app.command("/my-slakie-define", async ({ command, ack, respond }) => {
 
     if (!def) return respond({ text: `Couldn't find a definition for ${word}` });
 
-    let txt = `📖 *${res.data[0].word}* _(${meaning.partOfSpeech})_\n*Definition:*\n${def}`;
+    let txt = `📖 *${response.data[0].word}* _(${meaning.partOfSpeech})_\n*Definition:*\n${def}`;
     if (ex) txt += `\n*Example:*\n_${ex}_`;
 
     await respond({ response_type: "in_channel", text: txt });
@@ -227,7 +227,7 @@ app.command("/my-slakie-joke", async ({ ack, respond }) => {
 
   try {
     const response = await axios.get("https://official-joke-api.appspot.com/random_joke");
-    await respond({text:`${response.data.setup}${response.data.punchline}`});
+    await respond({text:`${response.data.setup}\n${response.data.punchline}`});
   } catch (err) {
     await respond({ text: "Failed to fetch a joke." });
   }
