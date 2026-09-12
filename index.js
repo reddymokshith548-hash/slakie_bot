@@ -128,7 +128,7 @@ app.command("/my-slakie-f1", async ({ ack, respond }) => {
     }
 
     let race = races[0];
-    let raceDate = new Date(`${race.date}T${race.time || "00:00:00"}`);
+    let raceDate = new Date(`${race.date}T${race.time || "00:00:00"}Z`);
     let daysDiff = Math.ceil((raceDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     
     let msg = "_Any guesses for the World Champ?_";
@@ -138,7 +138,7 @@ app.command("/my-slakie-f1", async ({ ack, respond }) => {
 
     await respond({
       response_type: "in_channel",
-      text: `🏎️ *Next F1 Race*\n🏁 *Race:* ${race.raceName}\n📍 *Circuit:* ${race.Circuit.circuitName}\n🌍 *Location:* ${race.Circuit.Location.locality}\n📅 📅 *Race Date:* ${new Date(race.date).toLocaleDateString('en-US', { dateStyle: 'long' })}\n⏰ *Time:* ${race.time || "TBD"}\n\n${msg}`,
+      text: `🏎️ *Next F1 Race*\n🏁 *Race:* ${race.raceName}\n📍 *Circuit:* ${race.Circuit.circuitName}\n🌍 *Location:* ${race.Circuit.Location.locality}\n📅 *Race Date:* ${new Date(race.date).toLocaleDateString('en-US', { dateStyle: 'long' })}\n⏰ *Time:* ${race.time || "TBD"}\n\n${msg}`,
     });
   } catch (err) {
     console.error(err);
