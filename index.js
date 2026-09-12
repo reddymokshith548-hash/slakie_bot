@@ -70,9 +70,9 @@ app.command("/my-slakie-help", async ({ ack, respond }) => {
 // ping command
 
 app.command("/my-slakie-ping", async ({ command, ack, respond }) => {
-  const start = todaysDate.now();
+  const start = Date.now();
   await ack();
-  const latency = todaysDate.now() - start;
+  const latency = Date.now() - start;
   await respond({ text: `Pong!\nLatency: ${latency}ms` });
 });
 
@@ -128,8 +128,8 @@ app.command("/my-slakie-f1", async ({ ack, respond }) => {
     }
 
     let race = races[0];
-    let racetodaysDate = new todaysDate(`${race.todaysDate}T${race.time || "00:00:00"}Z`);
-    let daysDiff = Math.ceil((racetodaysDate.getTime() - todaysDate.now()) / (1000 * 60 * 60 * 24));
+    let raceDate = new Date(`${race.date}T${race.time || "00:00:00"}Z`);
+    let daysDiff = Math.ceil((raceDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     
     let msg = "_Any guesses for the World Champ?_";
     if (daysDiff >= 0 && daysDiff <= 7) {
@@ -152,17 +152,22 @@ app.command("/my-slakie-define", async ({ command, ack, respond }) => {
   let word = command.text.trim();
   if (!word) return respond({ text: "Usage: `/my-slakie-define [word]`" });
 
-    const response= await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+  try {
+    
+    const response = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
     let meaning = response.data[0]?.meanings[0];
     let def = meaning?.definitions[0]?.definition;
     let ex = meaning?.definitions[0]?.example;
 
     if (!def) return respond({ text: `Couldn't find a definition for ${word}` });
 
-    let txt = `📖 *${response.data[0].word}* _(${meaning.partOfSpeech})_\n*Definition:*\n${def}`;
+    let txt = `📖 *${res.data[0].word}* _(${meaning.partOfSpeech})_\n*Definition:*\n${def}`;
     if (ex) txt += `\n*Example:*\n_${ex}_`;
 
     await respond({ response_type: "in_channel", text: txt });
+  } catch (err) {
+    await respond({ text: `📖 Couldn't find a definition for "${word}".` });
+  }
 });
  
 // QR code command
