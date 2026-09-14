@@ -1,18 +1,16 @@
 # Slackie_bot
 
-## This project was built during the Hack Club StarDance challenge.
+## This project was built during the [Hack Club Stardance](https://stardance.hackclub.com/home) challenge.
 
 
 ## Why I created this project?
 
-This project was created to learn:
+I created project to learn:
 
 - Slack Bot Development
-- API Integration
-- AI Integration
-- Error Handling
-- Async JavaScript
-- Deploying and hosting applications using Hack Club Nest
+- AI Integration in slack using live web searching 
+- JavaScript
+- Deploying and hosting applications 
 
 ---
 
@@ -20,20 +18,20 @@ This project was created to learn:
 
 What I learned during the process :
 
-I learned how to build a fully functional Slack bot from the ground up using Node.js and the Slack Bolt framework. Throughout the process, I gained hands-on experience integrating modern AI using the Google GenAI SDK (Gemini) and handling asynchronous data fetching with Axios to connect multiple external REST APIs (like live currency exchange, dictionaries, and F1 schedules). I also learned how to parse complex user inputs using Regular Expressions. On the infrastructure side, I learned how to deploy and host my code on a Raspberry Pi over SSH.
+I learned how to build a fully functional Slack bot which is hosted live on my own hardware 24x7.I developed many commands which use Open-source API to fetch data and output in a slack channel.I used Google GenAI SDK for gemini integration,Jolpica API for the F1 details,Joke API for jokes,Reddit meme API to output memesa nd many more.When it was time to deploy, instead of using the HackClub Nest server I used my own Raspberry Pi 5 to host my Slack Bot live 24x7 which itself needed lot of learning.Overall it was a great learning experience 
 
 ## 📋 Available Commands
 
 <img width="1713" height="495" alt="final devlog slakie_bot commands" src="https://github.com/user-attachments/assets/308fbf43-090d-4a64-8c00-6e32f96fae06" />
 
-## Live Demo & Testing
-
-- Go to hackclub and start trying commands
 
 ### How to test it?
 
 - Join the Slack HackClub workspace.
 - use commands in any channel.
+- Use slakie in a dedicated channel **#slakie-bot**.
+- First use **/my-slakie help** to know all the commands available with slakie
+
 
 ### Notes
 
@@ -43,24 +41,39 @@ I learned how to build a fully functional Slack bot from the ground up using Nod
 
 Have fun trying out Slackie! 
 
-## Installation
+## Installation 
 
-### 1. Clone the repository
+ ### Method 1: 
+
+Install Slakie-bot directly in slack 
+
+-  Install in any workspace -[Install](https://slack.com/oauth/v2/authorize?client_id=2210535565.12011020333188&scope=chat:write,commands,app_mentions:read,channels:history&user_scope=)
+
+ 
+ ### Method 2 
+
+#### 1. If Node.js,npm and git aren't installed use these commands to install them 
+        apt install -y git curl ca-certificates nano
+        curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
+        apt install -y nodejs
+ 
+#### 2. Clone the repository in your device 
 
 ```bash
 git clone https://github.com/reddymokshith548-hash/slakie_bot.git
-cd Slack-Bot
+cd slackie_bot
 ```
 
-### 2. Install dependencies
+### 3. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 3. add environment variables
+### 4. add environment variables
 
 Create a `.env` file:
+Fetch your slack app token which starts with 'xapp' and bot token which starts with 'xoxb' from Slack API after creating your app
 
 ```env
 SLACK_BOT_TOKEN=your_bot_token
@@ -85,3 +98,6 @@ node index.js
 - Reddit meme API
 - Official Joke API
 - Jolpica API for the F1 details
+- QR Code API to generate QR codes
+- Math.js API for evaluating math expressions
+- Exchange Rate API for currency converter
