@@ -18,11 +18,22 @@ I created project to learn:
 
 What I learned during the process :
 
-I learned how to build a fully functional Slack bot which is hosted live on my own hardware 24x7.I developed many commands which use Open-source API to fetch data and output in a slack channel.I used Google GenAI SDK for gemini integration,Jolpica API for the F1 details,Joke API for jokes,Reddit meme API to output memesa nd many more.When it was time to deploy, instead of using the HackClub Nest server I used my own Raspberry Pi 5 to host my Slack Bot live 24x7 which itself needed lot of learning.Overall it was a great learning experience 
+I learned how to build a fully functional Slack bot which is hosted live on my own hardware 24x7 which fetches live Formula 1 data, generates memes, jokes, generates QR code, solves math expressions and uses the Google Gemini SDK to answer questions directly in Slack.I developed many commands which use Open-source API to fetch data and output in a slack channel.I used Google GenAI SDK for gemini integration,Jolpica API for the F1 details,Joke API for jokes,Reddit meme API to output memesa nd many more.When it was time to deploy, instead of using the HackClub Nest server I used my own Raspberry Pi 5 to host my Slack Bot live 24x7 which itself needed lot of learning.I faced a lot of challenges with integrating Gemini, it used to always output old and outdated information until i realized that it needed a separate seraching function.Overall it was a great learning experience.
 
 ## 📋 Available Commands
 
-<img width="1713" height="495" alt="final devlog slakie_bot commands" src="https://github.com/user-attachments/assets/308fbf43-090d-4a64-8c00-6e32f96fae06" />
+| Command | Category | Description |
+| :--- | :--- | :--- |
+| `/my-slakie help` | 🛠 Utility | Show all available commands |
+| `/my-slakie ping` | 🛠 Utility | Check bot latency |
+| `/my-slakie joke` | 🎭 Fun | Get a random joke |
+| `/my-slakie meme` | 🎭 Fun | Get a random meme |
+| `/my-slakie f1` | 🏎 Information | Next F1 race info |
+| `/my-slakie define [word]` | 🏎 Information | Define a word |
+| `/my-slakie math [expression]` | 🧮 Tools | Math & unit calculation |
+| `/my-slakie currency [amount] [BASE] to [TARGET]` | 🧮 Tools | Currency conversion |
+| `/my-slakie qr [link]` | 🧮 Tools | Generate a QR code |
+| `/my-slakie gemini [question]` | 🤖 AI | Ask Slackie a question using Gemini |
 
 
 ### How to test it?
@@ -52,11 +63,8 @@ Install Slakie-bot directly in slack
  
  ### Method 2 
 
-#### 1. If Node.js,npm and git aren't installed use these commands to install them 
-        apt install -y git curl ca-certificates nano
-        curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
-        apt install -y nodejs
- 
+#### 1. Make sure you have [Node.js](https://nodejs.org/) and [Git](https://git-scm.com/) installed in your selected device 
+
 #### 2. Clone the repository in your device 
 
 ```bash
@@ -73,7 +81,7 @@ npm install
 ### 4. add environment variables
 
 Create a `.env` file:
-Fetch your slack app token which starts with 'xapp' and bot token which starts with 'xoxb' from Slack API after creating your app
+Fetch your slack app token which starts with 'xapp' and bot token which starts with 'xoxb' from Slack API after creating your app and also your Gemini API key to use Gemini Features
 
 ```env
 SLACK_BOT_TOKEN=your_bot_token
@@ -81,7 +89,7 @@ SLACK_APP_TOKEN=your_app_token
 GEMINI_API_TOKEN=your_gemini_api_token
 ```
 
-### 4. Start the bot
+### 5. Start the bot
 
 ```bash
 node index.js
