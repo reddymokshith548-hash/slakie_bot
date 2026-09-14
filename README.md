@@ -1,4 +1,4 @@
-# Slackie_bot
+# Slakie_bot
 
 ## This project was built during the [Hack Club Stardance](https://stardance.hackclub.com/home) challenge.
 
