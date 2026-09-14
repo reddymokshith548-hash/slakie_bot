@@ -1,4 +1,4 @@
-# Slakie_bot
+# <img width="100" height="100" alt="Black and Blue Minimalist Ai tech Logo" src="https://github.com/user-attachments/assets/af0f1937-bc86-4c85-9f13-d873601d612e" /> Slakie_bot
 
 ## This project was built during the [Hack Club Stardance](https://stardance.hackclub.com/home) challenge.
 
