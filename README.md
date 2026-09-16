@@ -8,9 +8,8 @@
 I created project to learn:
 
 - Slack Bot Development
-- AI Integration in slack using live web searching 
+- AI Integration in slack using live web searching
 - JavaScript
-- Deploying and hosting applications 
 
 ---
 
@@ -46,7 +45,6 @@ I learned how to build a fully functional Slack bot which is hosted live on my o
 
 ### Notes
 
-- Most commands reply only to the person who runs them.
 - Gemini commands may take a few seconds to respond.
 - Since I'm using free APIs, some features might occasionally be unavailable.
 
