@@ -40,7 +40,7 @@ I learned how to build a fully functional Slack bot which is hosted live on my o
 
 - Join the Slack HackClub workspace.
 - use commands in any channel.
-- Use slakie in a dedicated channel **#slakie-bot**.
+- Use slakie in a dedicated channel [**#slakie-bot**](https://hackclub.enterprise.slack.com/archives/C0C16D3SXCK)
 - First use **/my-slakie help** to know all the commands available with slakie
 
 
