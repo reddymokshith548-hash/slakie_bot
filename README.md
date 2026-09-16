@@ -17,7 +17,11 @@ I created project to learn:
 
 What I learned during the process :
 
-I learned how to build a fully functional Slack bot which is hosted live on my own hardware 24x7 which fetches live Formula 1 data, generates memes, jokes, generates QR code, solves math expressions and uses the Google Gemini SDK to answer questions directly in Slack.I developed many commands which use Open-source API to fetch data and output in a slack channel.I used Google GenAI SDK for gemini integration,Jolpica API for the F1 details,Joke API for jokes,Reddit meme API to output memesa nd many more.When it was time to deploy, instead of using the HackClub Nest server I used my own Raspberry Pi 5 to host my Slack Bot live 24x7 which itself needed lot of learning.I faced a lot of challenges with integrating Gemini, it used to always output old and outdated information until i realized that it needed a separate seraching function.Overall it was a great learning experience.
+I learned how to build a fully functional Slack bot which is hosted live on my own hardware 24x7 which fetches live Formula 1 data, generates memes, jokes, generates QR code, solves math expressions and uses the Google Gemini SDK to answer questions directly in Slack.
+I used Google GenAI SDK for gemini integration,Jolpica API for the F1 details,Joke API for jokes,Reddit meme API to output memesa nd many more.
+When it was time to deploy, instead of using the HackClub Nest server I used my own Raspberry Pi 5 to host my Slack Bot live 24x7 which itself needed lot of learning.
+
+I faced a lot of challenges with integrating Gemini, it used to always output old and outdated information until i realized that it needed a separate seraching function.Overall it was a great learning experience.
 
 ## 📋 Available Commands
 
