@@ -3,19 +3,14 @@
 ## This project was built during the [Hack Club Stardance](https://stardance.hackclub.com/home) challenge.
 
 
-## Why I created this project?
-
-I created project to learn:
+## I created project to learn:
 
 - Slack Bot Development
-- AI Integration in slack using live web searching
 - JavaScript
 
 ---
 
-## Developed as part of the **StarDance Hack Club** challenge.
-
-What I learned during the process :
+## What I learned during the process :
 
 - I learned how to build a fully functional Slack bot which is hosted live on my own hardware 24x7 which fetches live Formula 1 data, generates memes, jokes, generates QR code, solves math expressions and uses the Google Gemini SDK to answer questions directly in Slack.
 
@@ -29,16 +24,16 @@ What I learned during the process :
 
 | Command | Category | Description |
 | :--- | :--- | :--- |
-| `/my-slakie help` | 🛠 Utility | Show all available commands |
-| `/my-slakie ping` | 🛠 Utility | Check bot latency |
-| `/my-slakie joke` | 🎭 Fun | Get a random joke |
-| `/my-slakie meme` | 🎭 Fun | Get a random meme |
+| `/my-slakie help` |  Utility | Shows all available commands |
+| `/my-slakie ping` |  Utility | Check bot latency |
+| `/my-slakie joke` |  Fun | Get a random joke |
+| `/my-slakie meme` |  Fun | Get a random meme |
 | `/my-slakie f1` | 🏎 Information | Next F1 race info |
-| `/my-slakie define [word]` | 🏎 Information | Define a word |
-| `/my-slakie math [expression]` | 🧮 Tools | Math & unit calculation |
-| `/my-slakie currency [amount] [BASE] to [TARGET]` | 🧮 Tools | Currency conversion |
-| `/my-slakie qr [link]` | 🧮 Tools | Generate a QR code |
-| `/my-slakie gemini [question]` | 🤖 AI | Ask Slackie a question using Gemini |
+| `/my-slakie define [word]` |  Information | Define a word |
+| `/my-slakie math [expression]` | Tools | Math & unit calculation without variables |
+| `/my-slakie currency [amount] [BASE] to [TARGET]` | Tools | Currency conversion using Offical Currency codes |
+| `/my-slakie qr [link]` |  Tools | Generate a QR code by attaching a link |
+| `/my-slakie gemini [question]` | 🤖 AI | Ask Slakie a question using Gemini |
 
 
 ### How to test it?
@@ -52,9 +47,9 @@ What I learned during the process :
 ### Notes
 
 - Gemini commands may take a few seconds to respond.
-- Since I'm using free APIs, some features might occasionally be unavailable.
+- ## Since I'm using free APIs, some features might occasionally be unavailable.
 
-Have fun trying out Slackie! 
+## Have fun trying out Slakie! 
 
 ## Installation 
 
