@@ -30,7 +30,7 @@
 | `/my-slakie meme` |  Fun | Get a random meme |
 | `/my-slakie f1` | 🏎 Information | Next F1 race info |
 | `/my-slakie define [word]` |  Information | Define a word |
-| `/my-slakie math [expression]` | Tools | Math & unit calculation without variables |
+| `/my-slakie math [expression]` | Tools | Math calculator |
 | `/my-slakie currency [amount] [BASE] to [TARGET]` | Tools | Currency conversion using Offical Currency codes |
 | `/my-slakie qr [link]` |  Tools | Generate a QR code by attaching a link |
 | `/my-slakie gemini [question]` | 🤖 AI | Ask Slakie a question using Gemini |
@@ -58,43 +58,6 @@
 Install Slakie-bot directly in slack 
 
 -  Install in any workspace -[Install](https://slack.com/oauth/v2/authorize?client_id=2210535565.12011020333188&scope=chat:write,commands,app_mentions:read,channels:history&user_scope=)
-
- 
- ### Method 2 
-
-#### 1. Make sure you have [Node.js](https://nodejs.org/) and [Git](https://git-scm.com/) installed in your selected device 
-
-#### 2. Clone the repository in your device 
-
-```bash
-git clone https://github.com/reddymokshith548-hash/slakie_bot.git
-cd slackie_bot
-```
-
-### 3. Install dependencies
-
-```bash
-npm install
-```
-
-### 4. add environment variables
-
-Create a `.env` file:
-Fetch your slack app token which starts with 'xapp' and bot token which starts with 'xoxb' from Slack API after creating your app and also your Gemini API key to use Gemini Features
-
-```env
-SLACK_BOT_TOKEN=your_bot_token
-SLACK_APP_TOKEN=your_app_token
-GEMINI_API_TOKEN=your_gemini_api_token
-```
-
-### 5. Start the bot
-
-```bash
-node index.js
-```
-
----
 
 ## 🛠 Built With
 
