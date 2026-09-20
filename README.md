@@ -74,6 +74,6 @@ Install Slakie-bot directly in slack
 
 ## AI DEClARATION
 
-- NO AI was used in the codebase 
+- NO AI was used in the codebase it was only used to reserach how to implement web seraching in gemini
 - AI was used to understand how to make tables  and how to make text  bold in the README thats it. 
 - The Image used in the README is created by me in Canva
