@@ -71,3 +71,7 @@ Install Slakie-bot directly in slack
 - QR Code API to generate QR codes
 - Math.js API for evaluating math expressions
 - Exchange Rate API for currency converter
+
+## AI DEClARATION
+-NO AI was used in the codebase 
+-AI was used to understand how to make tables in the README
