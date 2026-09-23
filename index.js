@@ -124,13 +124,13 @@ app.command("/my-slakie-f1", async ({ ack, respond }) => {
     let raceDate = new Date(`${race.date}T${race.time || "00:00:00"}`);
     let daysDiff = Math.ceil((raceDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     
-    let msg = "_Any guesses for the World Champ?_";
+    let message = "_Any guesses for the World Champ?_";
     if (daysDiff >= 0 && daysDiff <= 7) {
-      msg += "\n🏎️ *It's Race Week! LESS GOOO!*";
+      message += "\n🏎️ *It's Race Week! LESS GOOO!*";
     }
     await respond({
       response_type: "in_channel",
-      text: `🏎️ *Next F1 Race*\n *Race:* ${race.raceName}\n *Circuit:* ${race.Circuit.circuitName}\n Location: ${race.Circuit.Location.locality}\n Race Date: ${new Date(race.date).toLocaleDateString('en-US', { dateStyle: 'long' })}\n Time: ${race.time || "TBD"}\n\n${msg}`,
+      text: `🏎️ *Next F1 Race*\n *Race:* ${race.raceName}\n *Circuit:* ${race.Circuit.circuitName}\n Location: ${race.Circuit.Location.locality}\n Race Date: ${new Date(race.date).toLocaleDateString('en-US', { dateStyle: 'long' })}\n Time: ${race.time || "TBD"}\n\n${message}`,
     });
   } catch (err) {
 
@@ -149,9 +149,9 @@ app.command("/my-slakie-define", async ({ command, ack, respond }) => {
     const def = meaning?.definitions[0]?.definition;
     if (!def) return respond({ text: `Not in my database. ${word}` });
 
-    const word = meaning.definitions[0]?.example;
+    const example = meaning.definitions[0]?.example;
     let txt = `*${data[0].word}* _(${meaning.partOfSpeech})_\n*Definition:*\n${def}`;
-    if (word) txt += `\n*Example:*\n_${ex}_`;
+    if (example) txt += `\n*Example:*\n_${ex}_`;
 
     await respond({
       response_type: "in_channel",
