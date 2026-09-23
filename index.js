@@ -9,62 +9,12 @@ const ai = new GoogleGenAI({});
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
   appToken: process.env.SLACK_APP_TOKEN,
-  socketMode: true,
+  socketMode: true
 });
 
 
-const todaysDate = new Date().toLocaleDateString('en-US', { dateStyle: 'long' });
 
-// finding sources for web searched materials
-function getSources(response) {
-  try {
-    let chunks = response?.candidates?.[0]?.groundingMetadata?.groundingChunks;
-    if (!chunks || chunks.length === 0) return "";
-    
-    let links = [];
-    for (let i = 0; i < chunks.length; i++) {
-      if (chunks[i].web && chunks[i].web.uri) {
-        links.push(`• <${chunks[i].web.uri}|${chunks[i].web.title}>`);
-      }
-    }
-    
-  } catch (err) {
-    console.log("failed to find sources");s
-  }
-}
 
-// help command
-app.command("/my-slakie-help", async ({ ack, respond }) => 
-    {
-  await ack();
-  await respond({
-    text: `🤖 *Slackie — Hack Club Bot*
-    📌 *Utility*
-    /my-slakie-help - Show all commands
-    /my-slakie-ping - Check bot latency
-
-    🎭 *Fun*
-    /my-slakie-joke - Random joke
-    /my-slakie-meme - Random meme
-
-    🌍 *Information*
-    /my-slakie-f1 - Next F1 race info
-    /my-slakie-define [word] - Define a word
-
-    🧮 *Tools*
-    /my-slakie-math [expression] - Math & unit calc
-    /my-slakie-currency [amount] [BASE] to [TARGET] - Currency conversion
-    /my-slakie-qr [link] - Generate a QR code
-
-    🧠 *AI*
-    /my-slakie-gemini [question] - Ask Slackie a question
-
-    Made by Pondugula Mokshith Reddy`,
-  
-  });
-});
-
-// ping command
 
 app.command("/my-slakie-ping", async ({ command, ack, respond }) => {
   const start = Date.now();
@@ -74,12 +24,65 @@ app.command("/my-slakie-ping", async ({ command, ack, respond }) => {
 });
 
 
+
+function getSources(response) {
+  try {
+    let chunks = response?.candidates?.[0]?.groundingMetadata?.groundingChunks;
+    if (!chunks || chunks.length === 0) return "";
+
+    let links = [];
+    for (let i = 0; i < chunks.length; i++) {
+      let web = chunks[i].web;
+      if (web && web.uri) {
+        links.push(`• <${web.uri}|${web.title || "source"}>`);
+      }
+    }
+
+    if (links.length === 0) return "";
+    return `\n\n*Sources:*\n${links.join("\n")}`;
+  } catch (err) {
+    console.log("couldn't grab sources.");
+    return "";
+  }
+}
+
+app.command("/my-slakie-help", async ({ ack, respond }) => 
+    {
+  await ack();
+  await respond({
+    text: `🤖 *Slackie — Hack Club Bot*
+     *Utility*
+    /my-slakie-help - Show all commands
+    /my-slakie-ping - Check bot latency
+
+     *Fun*
+    /my-slakie-joke - Random joke
+    /my-slakie-meme - Random meme
+
+    *Information*
+    /my-slakie-f1 - Next F1 race info
+    /my-slakie-define [word] - Define a word
+
+     *Tools*
+    /my-slakie-math [expression] - Math & unit calc
+    /my-slakie-currency [amount] [BASE] to [TARGET] - Currency conversion
+    /my-slakie-qr [link] - Generate a QR code
+
+     *AI*
+    /my-slakie-gemini [question] - Ask Slackie a question
+
+    Made by Pondugula Mokshith Reddy`,
+  
+  });
+});
+
+
 app.command("/my-slakie-gemini", async ({ command, ack, respond }) => {
   await ack();
   let question = command.text.trim();
 
   if (!question) {
-      return respond({ text: `I Think You Just Call Me! Without Any Question :) 😭` });
+      return respond({ text: `What bro no question me today , huhh ` });
     }
     try {
     const response = await ai.models.generateContent({
@@ -87,14 +90,12 @@ app.command("/my-slakie-gemini", async ({ command, ack, respond }) => {
       contents: question,
       
       config: {
-        systemInstruction: `You are Slackie, a bot for Hack Club. Use Google Search for anything current, recent, or changing like sports, tech news, and prices. Be friendly, keep it short, and explain things simply.`,
+        systemInstruction: "You're Slackie, a Hack Club bot. Search when it's something current — news, prices, sports. Keep answers short.",
         
         tools: [{ googleSearch: {} }],
       },
     });
-
-    
-    let answer = response.text || "I couldn't generate an answer.";
+    let answer = response.text || "I m sick.Catch me next time ";
     let sources = getSources(response);
 
     await respond({
@@ -102,8 +103,8 @@ app.command("/my-slakie-gemini", async ({ command, ack, respond }) => {
       text: `✨ *You asked:*\n${question}\n\n🤖 *Slackie says:*\n${answer}${sources}`,
     });
 }catch (err) {
-    console.error("gemini error:", err);
-      await respond({ text: "😭 Oops! Couldn't connect to Gemini.The model is in High demand now, please try again later"});
+  console.log(err.message);
+  await respond({ text: "😭 I couldn't connect to gemini.The model is in High demand now, try again later"});
     }
 });
 
@@ -115,7 +116,7 @@ app.command("/my-slakie-f1", async ({ ack, respond }) => {
     let races = response.data?.MRData?.RaceTable?.Races;
 
     if (!races || races.length === 0) {
-      return respond({ text: "🏎️ No upcoming races found right now." });
+      return respond({ text: "End of season my frd,why are you still here" });
     }
 
     let race = races[0];
@@ -124,38 +125,42 @@ app.command("/my-slakie-f1", async ({ ack, respond }) => {
     
     let msg = "_Any guesses for the World Champ?_";
     if (daysDiff >= 0 && daysDiff <= 7) {
-      msg += "\n🏎️💨 *It's Race Week! LESS GOOO!*";
+      msg += "\n🏎️ *It's Race Week! LESS GOOO!*";
     }
     await respond({
       response_type: "in_channel",
       text: `🏎️ *Next F1 Race*\n🏁 *Race:* ${race.raceName}\n📍 *Circuit:* ${race.Circuit.circuitName}\n🌍 *Location:* ${race.Circuit.Location.locality}\n📅 *Race Date:* ${new Date(race.date).toLocaleDateString('en-US', { dateStyle: 'long' })}\n⏰ *Time:* ${race.time || "TBD"}\n\n${msg}`,
     });
   } catch (err) {
-    console.error(err);
-    await respond({ text: "🏎️ Failed to fetch F1 data." });
+
+    await respond({ text: "🏎️ api is down" });
   }
 });
 
-// Define command
 app.command("/my-slakie-define", async ({ command, ack, respond }) => {
   await ack();
-  let word = command.text.trim();
+  const word = command.text.trim();
   if (!word) return respond({ text: "Usage: `/my-slakie-define [word]`" });
+
   try {
-    const response = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-    let meaning = response.data[0]?.meanings[0];
-    let def = meaning?.definitions[0]?.definition;
-    let ex = meaning?.definitions[0]?.example;
-    if (!def) return respond({ text: `Couldn't find a definition for ${word}` });
-    let txt = `📖 *${response.data[0].word}* _(${meaning.partOfSpeech})_\n*Definition:*\n${def}`;
+    const { data } = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+    const meaning = data[0]?.meanings[0];
+    const def = meaning?.definitions[0]?.definition;
+    if (!def) return respond({ text: `Not in my database. ${word}` });
+
+    const ex = meaning.definitions[0]?.example;
+    let txt = `📖 *${data[0].word}* _(${meaning.partOfSpeech})_\n*Definition:*\n${def}`;
     if (ex) txt += `\n*Example:*\n_${ex}_`;
-    await respond({ response_type: "in_channel", text: txt });
-  } catch (err) {
-    await respond({ text: `📖 Couldn't find a definition for "${word}".` });
+
+    await respond({
+      response_type: "in_channel",
+      text: txt });
+  } catch {
+    await respond({ text: `hm, couldn't find anything for "${word}" — might be misspelled` });
   }
 });
  
-// QR code command
+
 app.command("/my-slakie-qr", async ({ command, ack, respond }) => {
   await ack();
   let input = command.text.trim();
@@ -170,15 +175,20 @@ app.command("/my-slakie-qr", async ({ command, ack, respond }) => {
   });
 });
 
-// Math command
+
 app.command("/my-slakie-math", async ({ command, ack, respond }) => {
   await ack();
   let exp = command.text.trim();
-  if (!exp) return respond({ text: "Usage: `/my-slakie-math [expression]`" });
+  if (!exp) return respond({ 
+    text: "Usage: `/my-slakie-math [expression]`" });
   try {
     const response = await axios.get(`https://api.mathjs.org/v4/?expr=${encodeURIComponent(exp)}`);
-    await respond({response_type: "in_channel",text: `🧮 *Math:*\n\`${exp}\` = \`${response.data}\``});
-  } catch (err) {await respond({ text: "🧮 Formatting error. Check your math expression."});}
+    await respond({
+      response_type: "in_channel",
+      text: `🧮 *Math:*\n\`${exp}\` = \`${response.data}\``});
+  } catch (err) {
+    await respond({ 
+      text: "i can only accept numbers no variables and check your format"});}
 });
 
 // meme command 
@@ -193,21 +203,26 @@ app.command("/my-slakie-meme", async ({ ack, respond }) => {
         { type: "image", image_url: response.data.url, alt_text: "Meme" }
       ]
     });
-  } catch (err) {await respond({ text: "🖼️ Couldn't fetch a meme right now." });}
+  } catch (err) {await respond({ text: "no memes available right now" });}
 });
 
-// joke command
 app.command("/my-slakie-joke", async ({ ack, respond }) => {
   await ack();
   try {
     const response = await axios.get("https://official-joke-api.appspot.com/random_joke");
-    await respond({text:`${response.data.setup}\n${response.data.punchline}`});
+    await respond({
+      response_type: "in_channel",
+      text:
+      `${response.data.setup}
+      
+      ${response.data.punchline}`
+    });
   } catch (err) {
-    await respond({ text: "Failed to fetch a joke." });
+    await respond({ text: "Couldn't find a joke right now." });
   }
 });
 
-// currency command
+
 app.command("/my-slakie-currency", async ({ command, ack, respond }) => {
   await ack();
   let text = command.text.trim().toLowerCase();
@@ -218,35 +233,43 @@ app.command("/my-slakie-currency", async ({ command, ack, respond }) => {
   let target = "";
   if (parts.length === 3 && parts[1] === "to") {
     base = parts[0].toUpperCase();
+    
     target = parts[2].toUpperCase();
-  } else if (parts.length === 4 && parts[2] === "to") {
+  } 
+  
+  else if (parts.length === 4 && parts[2] === "to") {
     amount = parseFloat(parts[0]) || 1;
     base = parts[1].toUpperCase();
     target = parts[3].toUpperCase();
-  } else {
-    return respond({ text: "💱 Invalid format. Usage: `/my-slakie-currency [amount] [BASE] to [TARGET]`" });
+  } 
+  
+  else {
+    return respond({ text: "Wrong format. Usage: `/my-slakie-currency [amount] [BASE] to [TARGET]`" });
   }
+  
   try {
     const response = await axios.get(`https://open.er-api.com/v6/latest/${base}`);
     if (response.data.result === "error") {
       return respond({ text: `Couldn't find currency ${base}` });
     }
+   
     let rate = response.data.rates[target];
     if (!rate) return respond({ text: `Couldn't find rate for ${target}` });
     let converted = (amount * rate).toFixed(2);
     
     await respond({
       response_type: "in_channel",
-      text: `💱 *Currency Conversion*\n💵 *${amount} ${base}* = *${converted} ${target}*\n📊 _Rate: 1 ${base} = ${rate} ${target}_`
+      text:
+      ` *Currency Conversion* \n *${amount} ${base}* = *${converted} ${target}*\n _Rate 1${base} =${rate} ${target}_`
     });
-  } catch (err) {
-    console.error("currency error:", err);
-    await respond({ text: "💱 API is down, try again later." });
-  }
-});
+    }catch(err){
+      await respond({ text:"Try again later.Service is down"});
+    }
+  });
+    
+    
 
 (async () => {
-    await app.start();
-    console.log("🤖 Slackie is running!");
-    console.log(`📅 todaysDate: ${todaysDate}`);
+  await app.start();
+  console.log("bot is running!");
 })();
