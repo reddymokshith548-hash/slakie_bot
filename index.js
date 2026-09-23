@@ -130,7 +130,7 @@ app.command("/my-slakie-f1", async ({ ack, respond }) => {
     }
     await respond({
       response_type: "in_channel",
-      text: `🏎️ *Next F1 Race*\n🏁 *Race:* ${race.raceName}\n📍 *Circuit:* ${race.Circuit.circuitName}\n🌍 *Location:* ${race.Circuit.Location.locality}\n📅 *Race Date:* ${new Date(race.date).toLocaleDateString('en-US', { dateStyle: 'long' })}\n⏰ *Time:* ${race.time || "TBD"}\n\n${msg}`,
+      text: `🏎️ *Next F1 Race*\n *Race:* ${race.raceName}\n *Circuit:* ${race.Circuit.circuitName}\n Location: ${race.Circuit.Location.locality}\n Race Date: ${new Date(race.date).toLocaleDateString('en-US', { dateStyle: 'long' })}\n Time: ${race.time || "TBD"}\n\n${msg}`,
     });
   } catch (err) {
 
@@ -149,9 +149,9 @@ app.command("/my-slakie-define", async ({ command, ack, respond }) => {
     const def = meaning?.definitions[0]?.definition;
     if (!def) return respond({ text: `Not in my database. ${word}` });
 
-    const ex = meaning.definitions[0]?.example;
-    let txt = `📖 *${data[0].word}* _(${meaning.partOfSpeech})_\n*Definition:*\n${def}`;
-    if (ex) txt += `\n*Example:*\n_${ex}_`;
+    const word = meaning.definitions[0]?.example;
+    let txt = `*${data[0].word}* _(${meaning.partOfSpeech})_\n*Definition:*\n${def}`;
+    if (word) txt += `\n*Example:*\n_${ex}_`;
 
     await respond({
       response_type: "in_channel",
