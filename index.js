@@ -87,7 +87,7 @@ app.command("/my-slakie-gemini", async ({ command, ack, respond }) => {
     }
     try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
+      model: "gemini-3.5-flash",
       contents: question,
       
       config: {
