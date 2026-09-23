@@ -39,7 +39,7 @@ Slakie - Slack bot built into the hackclub workpace,it combines Gemini AI with l
 
 Install Slakie-bot directly in slack 
 
--  Install in any workspace -[Install](https://slack.com/oauth/v2/authorize?client_id=2210535565.12011020333188&scope=chat:write,commands,app_mentions:read,channels:history&user_scope
+-  Install in any workspace -[Install](https://slack.com/oauth/v2/authorize?client_id=2210535565.12011020333188&scope=chat:write,commands,app_mentions:read,channels:history&user_scope)
 
   
 Method 2
