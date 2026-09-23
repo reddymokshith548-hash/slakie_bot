@@ -50,6 +50,7 @@ app.command("/my-slakie-help", async ({ ack, respond }) =>
     {
   await ack();
   await respond({
+     response_type: "in_channel",
     text: `🤖 *Slackie — Hack Club Bot*
      *Utility*
     /my-slakie-help - Show all commands
